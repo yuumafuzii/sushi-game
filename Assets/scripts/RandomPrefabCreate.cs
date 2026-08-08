@@ -1,6 +1,4 @@
-using System.Threading.Tasks.Dataflow;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 public class RandomPrefabCreate : MonoBehaviour
 {
@@ -8,11 +6,11 @@ public class RandomPrefabCreate : MonoBehaviour
     private GameObject[] prefabs;
 
     [SerializeField]
-    private Transform SpawnPoint;
+    private Transform spawnPoint;
 
     private void Start()
     {
-        spown();
+        Spawn();
     }
 
     private void Spawn()
@@ -21,8 +19,8 @@ public class RandomPrefabCreate : MonoBehaviour
 
         Instantiate(
             prefabs[index],
-            SpawnPoint.position,
-            SpawnPoint.rotation
+            spawnPoint.position,
+            spawnPoint.rotation
         );
     }
 }
