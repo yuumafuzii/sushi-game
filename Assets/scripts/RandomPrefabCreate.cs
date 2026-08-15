@@ -2,25 +2,29 @@ using UnityEngine;
 
 public class RandomPrefabCreate : MonoBehaviour
 {
-    [SerializeField]
-    private GameObject[] prefabs;
+    [SerializeField] private float spawnPointX = -9f;
+    [SerializeField] private float spawnPointY = 0f;
+    [SerializeField] private float spawnPointZ = 7.5f;
+    [SerializeField] private GameObject[] spawnPrefabs = default;
 
-    [SerializeField]
-    private Transform spawnPoint;
+    [SerializeField] private float spawnInterval = 2.0f;
+    private float timer = 0.0f;
 
-    private void Start()
+    void Update()
     {
-        Spawn();
-    }
+        if (spawnPrefabs == null || spawnPrefabs.Length == 0) return;
 
-    private void Spawn()
-    {
-        int index = Random.Range(0, prefabs.Length);
+        timer += Time.deltaTime;
 
-        Instantiate(
-            prefabs[index],
-            spawnPoint.position,
-            spawnPoint.rotation
-        );
+        if (timer >= spawnInterval)
+        {
+            timer = 0.0f;
+
+            int randomIndex = Random.Range(0, spawnPrefabs.Length);
+
+            Vector3 spawnPos = new Vector3(spawnPointX, spawnPointY, spawnPointZ);
+
+            Instantiate(spawnPrefabs[randomIndex], spawnPos, Quaternion.identity);
+        }
     }
 }
