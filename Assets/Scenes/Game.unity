@@ -271,10 +271,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MouseRightCameraTurn
   sensitivity: 0.2
   rotateHorizontal: 1
-  rotateVertical: 1
-  limitHorizontal: 0
-  minHorizontal: -180
-  maxHorizontal: 180
+  rotateVertical: 0
+  limitHorizontal: 1
+  minHorizontal: -90
+  maxHorizontal: 90
   limitVertical: 1
   minVertical: -90
   maxVertical: 90
