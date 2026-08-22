@@ -77,7 +77,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4ccfaa9be47391e4eb98362289d02379, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PrefabMove
-  StartingPosition: -9
-  GoalPosition: 9
+  StartingPosition: -9.5
+  GoalPosition: 9.5
   Speed: 5
   RotationY: -90
