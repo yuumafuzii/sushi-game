@@ -2,11 +2,11 @@ using UnityEngine;
 
 public class PrefabMove : MonoBehaviour
 {
-    public float StartingPosition = -10f;
-    public float GoalPosition = 10f;
+    public float StartingPosition = -9.5f;
+    public float GoalPosition = 9.5f;
     public float Speed = 5.0f;
 
-    public float RotationY = 0f;
+    public float RotationY = 90f;
 
     void Start()
     {
