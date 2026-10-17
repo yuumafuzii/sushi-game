@@ -193,7 +193,7 @@ GameObject:
   - component: {fileID: 4405436728651794115}
   m_Layer: 0
   m_Name: salmon
-  m_TagString: Untagged
+  m_TagString: salmon
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
