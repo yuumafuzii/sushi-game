@@ -711,8 +711,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 100, y: 100}
+  m_AnchoredPosition: {x: -130, y: -120}
+  m_SizeDelta: {x: 300, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1770699971
 MonoBehaviour:
@@ -763,6 +763,8 @@ GameObject:
   - component: {fileID: 2084274087}
   - component: {fileID: 2084274086}
   - component: {fileID: 2084274085}
+  - component: {fileID: 2084274089}
+  - component: {fileID: 2084274088}
   m_Layer: 0
   m_Name: "\u30B0\u30ED\u30FC\u30D0\u30EB"
   m_TagString: Untagged
@@ -828,6 +830,42 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2084274088
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2084274084}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c5e4b37f5483b3148b369b70b6d82a8d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OnMOuseDownDetermine
+  orderManager: {fileID: 0}
+  correctCount: 0
+  incorrectCount: 0
+--- !u!114 &2084274089
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2084274084}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 58bc639f6c92fdb48bb3bcb714a590d6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OrderManager
+  orderPrefabs:
+  - {fileID: 926939728872560169, guid: b44a1e6d44516a4489d20d9daf01f6e6, type: 3}
+  - {fileID: 7873897415519767558, guid: 81e76b9824945f34ba7689231dc6a1fc, type: 3}
+  - {fileID: 4891758057691873740, guid: 2c3a2e713926af944bc91a324ae557bb, type: 3}
+  minOrderCount: 2
+  maxOrderCount: 5
+  orderPosition: {x: -80, y: -50}
+  orderItemSize: {x: 100, y: 100}
+  orderSpacing: 10
 --- !u!4 &721802648801362263
 Transform:
   m_ObjectHideFlags: 0
