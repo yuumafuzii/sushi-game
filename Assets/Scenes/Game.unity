@@ -843,8 +843,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OnMOuseDownDetermine
   orderManager: {fileID: 0}
-  correctCount: 0
-  incorrectCount: 0
+  targetCamera: {fileID: 0}
+  maxRayDistance: 1000
 --- !u!114 &2084274089
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -857,10 +857,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 58bc639f6c92fdb48bb3bcb714a590d6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OrderManager
-  orderPrefabs:
-  - {fileID: 926939728872560169, guid: b44a1e6d44516a4489d20d9daf01f6e6, type: 3}
-  - {fileID: 7873897415519767558, guid: 81e76b9824945f34ba7689231dc6a1fc, type: 3}
-  - {fileID: 4891758057691873740, guid: 2c3a2e713926af944bc91a324ae557bb, type: 3}
+  orderSprites:
+  - {fileID: 21300000, guid: 78d902794aac0454b86444899820d101, type: 3}
+  - {fileID: 21300000, guid: 65dc05009a72f354fab4114f235c23a9, type: 3}
+  - {fileID: 21300000, guid: c11abbf744187db42b2424978ab3ae25, type: 3}
   minOrderCount: 2
   maxOrderCount: 5
   orderPosition: {x: -80, y: -50}

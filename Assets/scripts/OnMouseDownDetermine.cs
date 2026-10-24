@@ -1,17 +1,28 @@
-
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class OnMouseDownDetermine : MonoBehaviour
 {
     [Header("注文管理")]
-    public OrderManager orderManager;
+    [SerializeField]
+    private OrderManager orderManager;
 
-    [Header("正解数")]
-    public int correctCount = 0;
+    [Header("カメラ")]
+    [SerializeField]
+    private Camera targetCamera;
 
-    [Header("不正解数")]
-    public int incorrectCount = 0;
+    [Header("Raycast設定")]
+    [SerializeField]
+    private float maxRayDistance = 1000f;
+
+    private void Awake()
+    {
+        if (targetCamera == null)
+            targetCamera = Camera.main;
+
+        if (orderManager == null)
+            orderManager = FindFirstObjectByType<OrderManager>();
+    }
 
     private void Update()
     {
@@ -21,26 +32,22 @@ public class OnMouseDownDetermine : MonoBehaviour
         if (!Mouse.current.leftButton.wasPressedThisFrame)
             return;
 
-        if (Camera.main == null || orderManager == null)
+        if (targetCamera == null || orderManager == null)
             return;
 
-        Ray ray = Camera.main.ScreenPointToRay(
+        Ray ray = targetCamera.ScreenPointToRay(
             Mouse.current.position.ReadValue()
         );
 
-        if (!Physics.Raycast(ray, out RaycastHit hitInfo))
+        if (!Physics.Raycast(
+            ray,
+            out RaycastHit hitInfo,
+            maxRayDistance))
+        {
             return;
-
-        // Colliderの付いたオブジェクトのTagを取得
-        string clickedTag = hitInfo.collider.tag;
-
-        if (orderManager.RemoveOrder(clickedTag))
-        {
-            correctCount++;
         }
-        else
-        {
-            incorrectCount++;
-        }
+
+        // 商品自身から親方向へ名前を確認し、注文と一致したら判定します
+        orderManager.CheckProductObject(hitInfo.collider.gameObject);
     }
 }

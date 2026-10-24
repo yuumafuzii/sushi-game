@@ -1,64 +1,53 @@
-
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class OrderManager : MonoBehaviour
 {
-    [Header("注文に使うUI用プレハブ")]
-    [Tooltip("Imageなど、RectTransformを持つUI用プレハブを登録")]
-    public List<GameObject> orderPrefabs = new List<GameObject>();
+    [Header("注文用スプライト")]
+    [Tooltip("各スプライト名を対応する商品タグ名と一致させてください")]
+    public List<Sprite> orderSprites = new List<Sprite>();
 
-    [Header("注文の生成設定")]
+    [Header("注文数")]
     [Min(1)]
-    public int minOrderCount = 2;
+    public int minOrderCount = 3;
 
     [Min(1)]
-    public int maxOrderCount = 5;
+    public int maxOrderCount = 3;
 
-    [Header("注文の表示位置（Inspectorから変更可能）")]
+    [Header("注文表示位置")]
     public Vector2 orderPosition = new Vector2(0f, -20f);
 
-    [Header("注文画像のサイズ")]
+    [Header("注文画像サイズ")]
     public Vector2 orderItemSize = new Vector2(100f, 100f);
 
     [Header("注文画像の間隔")]
     public float orderSpacing = 10f;
 
-    private RectTransform orderParent;
-    private readonly List<string> currentOrders = new List<string>();
-    private readonly List<GameObject> displayedOrders = new List<GameObject>();
-
     private Canvas orderCanvas;
+    private RectTransform orderParent;
+
+    private readonly List<Sprite> currentOrders =
+        new List<Sprite>();
+
+    private readonly List<GameObject> displayedOrders =
+        new List<GameObject>();
+
+    public int CorrectCount { get; private set; }
+    public int IncorrectCount { get; private set; }
 
     private void Start()
     {
-        CreateOrderCanvas();
-
-        if (orderPrefabs.Count == 0)
-        {
-            Debug.LogError("Order Prefabsが空です。UI用プレハブを登録してください。");
+        if (orderSprites == null || orderSprites.Count == 0)
             return;
-        }
 
-        foreach (GameObject prefab in orderPrefabs)
+        foreach (Sprite sprite in orderSprites)
         {
-            if (prefab == null)
-            {
-                Debug.LogError("Order PrefabsにNoneがあります。空欄を埋めるか削除してください。");
+            if (sprite == null)
                 return;
-            }
-
-            if (prefab.GetComponent<RectTransform>() == null)
-            {
-                Debug.LogError(
-                    prefab.name + " にRectTransformがありません。" +
-                    "3DモデルではなくUI用プレハブを登録してください。"
-                );
-                return;
-            }
         }
 
+        CreateOrderCanvas();
         GenerateOrder();
     }
 
@@ -76,9 +65,15 @@ public class OrderManager : MonoBehaviour
         orderCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
         orderCanvas.sortingOrder = 100;
 
-        CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920f, 1080f);
+        CanvasScaler scaler =
+            canvasObject.GetComponent<CanvasScaler>();
+
+        scaler.uiScaleMode =
+            CanvasScaler.ScaleMode.ScaleWithScreenSize;
+
+        scaler.referenceResolution =
+            new Vector2(1920f, 1080f);
+
         scaler.matchWidthOrHeight = 0.5f;
 
         GameObject parentObject = new GameObject(
@@ -87,16 +82,17 @@ public class OrderManager : MonoBehaviour
             typeof(HorizontalLayoutGroup)
         );
 
-        parentObject.transform.SetParent(canvasObject.transform, false);
+        parentObject.transform.SetParent(
+            canvasObject.transform,
+            false
+        );
 
-        orderParent = parentObject.GetComponent<RectTransform>();
+        orderParent =
+            parentObject.GetComponent<RectTransform>();
 
-        // 画面上部中央を基準にする
         orderParent.anchorMin = new Vector2(0.5f, 1f);
         orderParent.anchorMax = new Vector2(0.5f, 1f);
         orderParent.pivot = new Vector2(0.5f, 1f);
-
-        // Inspectorで設定した位置を反映
         orderParent.anchoredPosition = orderPosition;
 
         HorizontalLayoutGroup layout =
@@ -114,63 +110,126 @@ public class OrderManager : MonoBehaviour
     {
         ClearOrder();
 
-        if (orderPrefabs.Count == 0)
+        if (orderSprites == null || orderSprites.Count == 0)
             return;
 
         int min = Mathf.Max(1, minOrderCount);
         int max = Mathf.Max(min, maxOrderCount);
 
-        int orderCount = Random.Range(min, max + 1);
+        int orderCount =
+            Random.Range(min, max + 1);
 
         for (int i = 0; i < orderCount; i++)
         {
-            GameObject prefab = orderPrefabs[
-                Random.Range(0, orderPrefabs.Count)
+            Sprite sprite = orderSprites[
+                Random.Range(0, orderSprites.Count)
             ];
 
-            if (prefab == null)
+            if (sprite == null)
                 continue;
 
-            // プレハブ名を商品Tagとして扱う
-            string itemTag = prefab.name;
+            GameObject imageObject = new GameObject(
+                "OrderImage_" + sprite.name,
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image)
+            );
 
-            currentOrders.Add(itemTag);
+            imageObject.transform.SetParent(orderParent, false);
 
-            GameObject display = Instantiate(prefab, orderParent);
-            displayedOrders.Add(display);
+            Image image = imageObject.GetComponent<Image>();
+            image.sprite = sprite;
+            image.preserveAspect = true;
+            image.raycastTarget = false;
 
-            RectTransform itemRect =
-                display.GetComponent<RectTransform>();
+            RectTransform rect =
+                imageObject.GetComponent<RectTransform>();
 
-            itemRect.sizeDelta = orderItemSize;
-            itemRect.localScale = Vector3.one;
+            rect.sizeDelta = orderItemSize;
+            rect.localScale = Vector3.one;
+
+            currentOrders.Add(sprite);
+            displayedOrders.Add(imageObject);
         }
     }
 
-    public bool RemoveOrder(string itemTag)
+    /// <summary>
+    /// 商品オブジェクト自身と親階層のタグ名から注文を判定します。
+    /// </summary>
+    public bool CheckProductObject(GameObject clickedObject)
     {
-        int index = currentOrders.IndexOf(itemTag);
+        if (clickedObject == null)
+        {
+            IncorrectCount++;
+            return false;
+        }
 
-        // 注文にない商品
+        for (Transform current = clickedObject.transform;
+             current != null;
+             current = current.parent)
+        {
+            if (TryRemoveCurrentOrder(current.tag))
+                return true;
+        }
+
+        IncorrectCount++;
+        return false;
+    }
+
+    /// <summary>
+    /// タグ名から注文を判定します。
+    /// </summary>
+    public bool CheckProductTag(string tagName)
+    {
+        if (TryRemoveCurrentOrder(tagName))
+            return true;
+
+        IncorrectCount++;
+        return false;
+    }
+
+    private bool TryRemoveCurrentOrder(string tagName)
+    {
+        if (string.IsNullOrEmpty(tagName) ||
+            tagName == "Untagged")
+        {
+            return false;
+        }
+
+        Sprite matchingSprite = null;
+
+        foreach (Sprite sprite in orderSprites)
+        {
+            if (sprite != null &&
+                sprite.name == tagName)
+            {
+                matchingSprite = sprite;
+                break;
+            }
+        }
+
+        if (matchingSprite == null)
+            return false;
+
+        int index = currentOrders.IndexOf(matchingSprite);
+
         if (index < 0)
             return false;
 
+        CorrectCount++;
         currentOrders.RemoveAt(index);
 
         if (index < displayedOrders.Count)
         {
-            GameObject display = displayedOrders[index];
+            GameObject imageObject = displayedOrders[index];
             displayedOrders.RemoveAt(index);
 
-            if (display != null)
-                Destroy(display);
+            if (imageObject != null)
+                Destroy(imageObject);
         }
 
-        // 注文をすべて達成したら次の注文を生成
         if (currentOrders.Count == 0)
-        {
             GenerateOrder();
-        }
 
         return true;
     }
@@ -179,10 +238,10 @@ public class OrderManager : MonoBehaviour
     {
         currentOrders.Clear();
 
-        foreach (GameObject display in displayedOrders)
+        foreach (GameObject imageObject in displayedOrders)
         {
-            if (display != null)
-                Destroy(display);
+            if (imageObject != null)
+                Destroy(imageObject);
         }
 
         displayedOrders.Clear();
