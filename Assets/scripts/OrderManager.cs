@@ -1,22 +1,23 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class OrderManager : MonoBehaviour
 {
-    [Header("注文用スプライト")]
-    [Tooltip("各スプライト名を対応する商品タグ名と一致させてください")]
-    public List<Sprite> orderSprites = new List<Sprite>();
+    [Header("注文商品Prefab")]
+    [Tooltip("PrefabのタグとSpriteRendererまたはImageから情報を自動取得します")]
+    [SerializeField]
+    private List<GameObject> orderPrefabs = new List<GameObject>();
 
     [Header("注文数")]
-    [Min(1)]
-    public int minOrderCount = 3;
+    [SerializeField, Min(1)]
+    private int orderCount = 3;
 
-    [Min(1)]
-    public int maxOrderCount = 3;
-
-    [Header("注文表示位置")]
-    public Vector2 orderPosition = new Vector2(0f, -20f);
+    [Header("注文表示位置（画面中央からのXYオフセット）")]
+    [SerializeField]
+    private Vector2 orderPosition = new Vector2(0f, -20f);
 
     [Header("注文画像サイズ")]
     public Vector2 orderItemSize = new Vector2(100f, 100f);
@@ -24,31 +25,116 @@ public class OrderManager : MonoBehaviour
     [Header("注文画像の間隔")]
     public float orderSpacing = 10f;
 
+    [Header("ゲーム終了条件")]
+    [SerializeField, Min(1)]
+    private int customersToClear = 10;
+
+    [SerializeField, Min(1)]
+    private int mistakesToGameOver = 20;
+
+    [Header("遷移先シーン名")]
+    [SerializeField]
+    private string gameOverSceneName;
+
+    [SerializeField]
+    private string gameClearSceneName;
+
     private Canvas orderCanvas;
     private RectTransform orderParent;
+    private bool waitingForNextOrder;
+    private bool isEnding;
+    private int completedCustomers;
 
-    private readonly List<Sprite> currentOrders =
-        new List<Sprite>();
+    private readonly List<ProductData> availableProducts =
+        new List<ProductData>();
 
-    private readonly List<GameObject> displayedOrders =
-        new List<GameObject>();
+    private readonly List<OrderEntry> currentOrders =
+        new List<OrderEntry>();
 
     public int CorrectCount { get; private set; }
     public int IncorrectCount { get; private set; }
 
+    private class ProductData
+    {
+        public string TagName;
+        public Sprite Sprite;
+    }
+
+    private class OrderEntry
+    {
+        public string TagName;
+        public GameObject ImageObject;
+    }
+
     private void Start()
     {
-        if (orderSprites == null || orderSprites.Count == 0)
-            return;
+        LoadProducts();
 
-        foreach (Sprite sprite in orderSprites)
+        if (availableProducts.Count == 0)
         {
-            if (sprite == null)
-                return;
+            Debug.LogError(
+                "注文に使えるPrefabがありません。PrefabのタグとSpriteを確認してください。",
+                this
+            );
+            return;
         }
 
         CreateOrderCanvas();
         GenerateOrder();
+    }
+
+    private void LoadProducts()
+    {
+        availableProducts.Clear();
+
+        foreach (GameObject productPrefab in orderPrefabs)
+        {
+            if (productPrefab == null)
+            {
+                Debug.LogWarning("注文Prefabに未設定の項目があります。", this);
+                continue;
+            }
+
+            Sprite sprite = GetPrefabSprite(productPrefab);
+
+            if (sprite == null)
+            {
+                Debug.LogWarning(
+                    $"Prefab「{productPrefab.name}」からSpriteを取得できません。SpriteRendererまたはImageを設定してください。",
+                    productPrefab
+                );
+                continue;
+            }
+
+            ProductData product = new ProductData
+            {
+                TagName = productPrefab.tag,
+                Sprite = sprite
+            };
+
+            availableProducts.Add(product);
+
+            Debug.Log(
+                $"注文Prefabを登録: {productPrefab.name}, タグ={product.TagName}, Sprite={sprite.name}",
+                productPrefab
+            );
+        }
+    }
+
+    private Sprite GetPrefabSprite(GameObject prefab)
+    {
+        SpriteRenderer spriteRenderer =
+            prefab.GetComponentInChildren<SpriteRenderer>(true);
+
+        if (spriteRenderer != null && spriteRenderer.sprite != null)
+            return spriteRenderer.sprite;
+
+        Image image = prefab.GetComponentInChildren<Image>(true);
+
+        if (image != null && image.sprite != null)
+            return image.sprite;
+
+        return null;
     }
 
     private void CreateOrderCanvas()
@@ -65,71 +151,43 @@ public class OrderManager : MonoBehaviour
         orderCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
         orderCanvas.sortingOrder = 100;
 
-        CanvasScaler scaler =
-            canvasObject.GetComponent<CanvasScaler>();
-
-        scaler.uiScaleMode =
-            CanvasScaler.ScaleMode.ScaleWithScreenSize;
-
-        scaler.referenceResolution =
-            new Vector2(1920f, 1080f);
-
+        CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
         scaler.matchWidthOrHeight = 0.5f;
 
         GameObject parentObject = new GameObject(
             "OrderParent",
-            typeof(RectTransform),
-            typeof(HorizontalLayoutGroup)
+            typeof(RectTransform)
         );
 
-        parentObject.transform.SetParent(
-            canvasObject.transform,
-            false
-        );
+        parentObject.transform.SetParent(canvasObject.transform, false);
 
-        orderParent =
-            parentObject.GetComponent<RectTransform>();
-
-        orderParent.anchorMin = new Vector2(0.5f, 1f);
-        orderParent.anchorMax = new Vector2(0.5f, 1f);
-        orderParent.pivot = new Vector2(0.5f, 1f);
+        orderParent = parentObject.GetComponent<RectTransform>();
+        orderParent.anchorMin = new Vector2(0.5f, 0.5f);
+        orderParent.anchorMax = new Vector2(0.5f, 0.5f);
+        orderParent.pivot = new Vector2(0.5f, 0.5f);
         orderParent.anchoredPosition = orderPosition;
-
-        HorizontalLayoutGroup layout =
-            parentObject.GetComponent<HorizontalLayoutGroup>();
-
-        layout.spacing = orderSpacing;
-        layout.childAlignment = TextAnchor.UpperCenter;
-        layout.childControlWidth = false;
-        layout.childControlHeight = false;
-        layout.childForceExpandWidth = false;
-        layout.childForceExpandHeight = false;
     }
 
     private void GenerateOrder()
     {
         ClearOrder();
 
-        if (orderSprites == null || orderSprites.Count == 0)
+        if (orderParent == null || availableProducts.Count == 0)
             return;
 
-        int min = Mathf.Max(1, minOrderCount);
-        int max = Mathf.Max(min, maxOrderCount);
+        int count = Mathf.Max(1, orderCount);
+        float spacing = orderItemSize.x + orderSpacing;
+        float startX = -((count - 1) * spacing) / 2f;
 
-        int orderCount =
-            Random.Range(min, max + 1);
-
-        for (int i = 0; i < orderCount; i++)
+        for (int i = 0; i < count; i++)
         {
-            Sprite sprite = orderSprites[
-                Random.Range(0, orderSprites.Count)
-            ];
-
-            if (sprite == null)
-                continue;
+            ProductData product =
+                availableProducts[Random.Range(0, availableProducts.Count)];
 
             GameObject imageObject = new GameObject(
-                "OrderImage_" + sprite.name,
+                "OrderImage_" + product.Sprite.name,
                 typeof(RectTransform),
                 typeof(CanvasRenderer),
                 typeof(Image)
@@ -138,113 +196,147 @@ public class OrderManager : MonoBehaviour
             imageObject.transform.SetParent(orderParent, false);
 
             Image image = imageObject.GetComponent<Image>();
-            image.sprite = sprite;
+            image.sprite = product.Sprite;
             image.preserveAspect = true;
             image.raycastTarget = false;
 
-            RectTransform rect =
-                imageObject.GetComponent<RectTransform>();
-
+            RectTransform rect = imageObject.GetComponent<RectTransform>();
             rect.sizeDelta = orderItemSize;
-            rect.localScale = Vector3.one;
+            rect.anchoredPosition = new Vector2(startX + i * spacing, 0f);
 
-            currentOrders.Add(sprite);
-            displayedOrders.Add(imageObject);
+            currentOrders.Add(new OrderEntry
+            {
+                TagName = product.TagName,
+                ImageObject = imageObject
+            });
         }
     }
 
-    /// <summary>
-    /// 商品オブジェクト自身と親階層のタグ名から注文を判定します。
-    /// </summary>
-    public bool CheckProductObject(GameObject clickedObject)
-    {
-        if (clickedObject == null)
-        {
-            IncorrectCount++;
-            return false;
-        }
-
-        for (Transform current = clickedObject.transform;
-             current != null;
-             current = current.parent)
-        {
-            if (TryRemoveCurrentOrder(current.tag))
-                return true;
-        }
-
-        IncorrectCount++;
-        return false;
-    }
-
-    /// <summary>
-    /// タグ名から注文を判定します。
-    /// </summary>
     public bool CheckProductTag(string tagName)
     {
-        if (TryRemoveCurrentOrder(tagName))
-            return true;
-
-        IncorrectCount++;
-        return false;
-    }
-
-    private bool TryRemoveCurrentOrder(string tagName)
-    {
-        if (string.IsNullOrEmpty(tagName) ||
-            tagName == "Untagged")
-        {
-            return false;
-        }
-
-        Sprite matchingSprite = null;
-
-        foreach (Sprite sprite in orderSprites)
-        {
-            if (sprite != null &&
-                sprite.name == tagName)
-            {
-                matchingSprite = sprite;
-                break;
-            }
-        }
-
-        if (matchingSprite == null)
+        if (isEnding || string.IsNullOrEmpty(tagName) || waitingForNextOrder)
             return false;
 
-        int index = currentOrders.IndexOf(matchingSprite);
+        List<string> orderTags = new List<string>();
 
-        if (index < 0)
-            return false;
+        foreach (OrderEntry order in currentOrders)
+            orderTags.Add(order.TagName);
 
-        CorrectCount++;
-        currentOrders.RemoveAt(index);
+        Debug.Log(
+            $"注文タグ一覧: [{string.Join(", ", orderTags)}] / クリックタグ: {tagName}",
+            this
+        );
 
-        if (index < displayedOrders.Count)
+        for (int i = 0; i < currentOrders.Count; i++)
         {
-            GameObject imageObject = displayedOrders[index];
-            displayedOrders.RemoveAt(index);
+            if (currentOrders[i].TagName != tagName)
+                continue;
+
+            GameObject imageObject = currentOrders[i].ImageObject;
+            currentOrders.RemoveAt(i);
 
             if (imageObject != null)
                 Destroy(imageObject);
+
+            CorrectCount++;
+            RefreshOrderPositions();
+
+            if (currentOrders.Count == 0)
+            {
+                completedCustomers++;
+                Debug.Log(
+                    $"注文完了: {completedCustomers}/{customersToClear}人",
+                    this
+                );
+
+                if (completedCustomers >= customersToClear)
+                {
+                    LoadEndingScene(gameClearSceneName);
+                }
+                else
+                {
+                    StartCoroutine(GenerateNextOrder());
+                }
+            }
+
+            return true;
         }
 
-        if (currentOrders.Count == 0)
+        IncorrectCount++;
+        Debug.Log(
+            $"不正解: {IncorrectCount}/{mistakesToGameOver}回",
+            this
+        );
+
+        if (IncorrectCount >= mistakesToGameOver)
+            LoadEndingScene(gameOverSceneName);
+
+        return false;
+    }
+
+    private void LoadEndingScene(string sceneName)
+    {
+        if (string.IsNullOrWhiteSpace(sceneName))
+        {
+            Debug.LogError("遷移先のシーン名が設定されていません。", this);
+            return;
+        }
+
+        isEnding = true;
+        SceneManager.LoadScene(sceneName);
+    }
+
+    private IEnumerator GenerateNextOrder()
+    {
+        waitingForNextOrder = true;
+        yield return new WaitForSeconds(0.5f);
+
+        if (!isEnding)
             GenerateOrder();
 
-        return true;
+        waitingForNextOrder = false;
     }
 
     private void ClearOrder()
     {
-        currentOrders.Clear();
-
-        foreach (GameObject imageObject in displayedOrders)
+        foreach (OrderEntry order in currentOrders)
         {
-            if (imageObject != null)
-                Destroy(imageObject);
+            if (order.ImageObject != null)
+                Destroy(order.ImageObject);
         }
 
-        displayedOrders.Clear();
+        currentOrders.Clear();
+    }
+
+    private void RefreshOrderPositions()
+    {
+        float spacing = orderItemSize.x + orderSpacing;
+        float startX = -((Mathf.Max(1, orderCount) - 1) * spacing) / 2f;
+
+        for (int i = 0; i < currentOrders.Count; i++)
+        {
+            GameObject imageObject = currentOrders[i].ImageObject;
+
+            if (imageObject == null)
+                continue;
+
+            RectTransform rect = imageObject.GetComponent<RectTransform>();
+            rect.anchoredPosition = new Vector2(startX + i * spacing, 0f);
+        }
+    }
+
+    private void LateUpdate()
+    {
+        if (orderParent != null)
+            ApplyOrderPosition();
+    }
+
+    private void ApplyOrderPosition()
+    {
+        orderParent.anchorMin = new Vector2(0.5f, 0.5f);
+        orderParent.anchorMax = new Vector2(0.5f, 0.5f);
+        orderParent.pivot = new Vector2(0.5f, 0.5f);
+        orderParent.anchoredPosition = orderPosition;
     }
 
     private void OnDestroy()

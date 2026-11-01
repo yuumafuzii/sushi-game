@@ -1,53 +1,26 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 public class OnMouseDownDetermine : MonoBehaviour
 {
-    [Header("注文管理")]
-    [SerializeField]
-    private OrderManager orderManager;
-
-    [Header("カメラ")]
-    [SerializeField]
-    private Camera targetCamera;
-
-    [Header("Raycast設定")]
-    [SerializeField]
-    private float maxRayDistance = 1000f;
+    [SerializeField] private OrderManager orderManager;
 
     private void Awake()
     {
-        if (targetCamera == null)
-            targetCamera = Camera.main;
-
         if (orderManager == null)
-            orderManager = FindFirstObjectByType<OrderManager>();
+            orderManager = FindAnyObjectByType<OrderManager>();
     }
 
-    private void Update()
+    /// <summary>
+    /// OnMouseDownRayCraftから受け取ったタグで注文UIを判定します。
+    /// </summary>
+    public bool CheckClickedTag(string tagName)
     {
-        if (Mouse.current == null)
-            return;
-
-        if (!Mouse.current.leftButton.wasPressedThisFrame)
-            return;
-
-        if (targetCamera == null || orderManager == null)
-            return;
-
-        Ray ray = targetCamera.ScreenPointToRay(
-            Mouse.current.position.ReadValue()
-        );
-
-        if (!Physics.Raycast(
-            ray,
-            out RaycastHit hitInfo,
-            maxRayDistance))
+        if (orderManager == null)
         {
-            return;
+            Debug.LogError("OrderManagerが見つかりません。", this);
+            return false;
         }
 
-        // 商品自身から親方向へ名前を確認し、注文と一致したら判定します
-        orderManager.CheckProductObject(hitInfo.collider.gameObject);
+        return orderManager.CheckProductTag(tagName);
     }
 }

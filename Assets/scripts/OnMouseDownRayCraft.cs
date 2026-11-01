@@ -28,6 +28,9 @@ public class OnMouseDownRayCraft : MonoBehaviour
 
             if (Physics.BoxCast(center, halfExtents, forwardXZ, out hitInfo, orientation, 100f))
             {
+                FindAnyObjectByType<OnMouseDownDetermine>()
+                    ?.CheckClickedTag(hitInfo.collider.tag);
+
                 destroyedList.Add(hitInfo.collider.gameObject.name);
                 Destroy(hitInfo.collider.gameObject);
             }

@@ -23,6 +23,12 @@ MonoBehaviour:
   - m_enabled: 1
     m_path: Assets/Scenes/Game.unity
     m_guid: 99c9720ab356a0642a771bea13969a05
+  - m_enabled: 1
+    m_path: Assets/Scenes/gameclear.unity
+    m_guid: 8ddc3ddd738d86a4fbda34af903eb4b4
+  - m_enabled: 1
+    m_path: Assets/Scenes/gameover.unity
+    m_guid: 88d45be2ce62a6f499bb4e1ca4809e28
   m_HasScriptingDefines: 0
   m_ScriptingDefines: []
   m_PlayerSettingsYaml:
