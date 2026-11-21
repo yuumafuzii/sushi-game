@@ -103,4 +103,11 @@ public class SceneManagement : MonoBehaviour
         isLoading = true;
         SceneManager.LoadScene(sceneName);
     }
+
+    // クラス内に追加
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    private static void ForceStartScene()
+    {
+        SceneManager.LoadScene("Title", LoadSceneMode.Single);
+    }
 }

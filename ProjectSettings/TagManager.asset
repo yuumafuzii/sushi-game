@@ -7,6 +7,10 @@ TagManager:
   - maguro
   - salmon
   - tamago
+  - buri
+  - tai
+  - ikura
+  - kazunoko
   layers:
   - Default
   - TransparentFX

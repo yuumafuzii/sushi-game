@@ -6,7 +6,7 @@ public class PrefabMove : MonoBehaviour
     public float GoalPosition = 9.5f;
     public float Speed = 5.0f;
 
-    public float RotationY = 90f;
+    public float RotationY = -90f;
 
     void Start()
     {
